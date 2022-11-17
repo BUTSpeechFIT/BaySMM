@@ -441,7 +441,7 @@ def create_baysmm_config(args):
         config['eta_q'] = args.eta_q
         config['eta_t'] = args.eta_t
         config['cuda'] = args.cuda
-        config['update_ubm'] = args.update_ubm
+        # config['update_ubm'] = args.update_ubm  # not required as we update ubm always (model.m)
         config['trn_iters'] = args.trn
         config['pytorch_ver'] = torch.__version__
         config['save'] = args.save
