@@ -67,9 +67,9 @@ def run_clf(train_feats, train_labels, test_feats, test_labels, args):
         glc.train(train_feats, train_labels)
 
         train_pred = glc.predict(train_feats)
-        train_prob = glc.predict(train_feats, return_probs=True)
+        train_prob = glc.predict_proba(train_feats)
         test_pred = glc.predict(test_feats)
-        test_prob = glc.predict(test_feats, return_probs=True)
+        test_prob = glc.predict_proba(test_feats)
 
     elif args.clf == "lr":
         mclr = LogisticRegressionCV(Cs=[0.01, 0.1, 0.2, 0.5, 1.0, 10.0],
