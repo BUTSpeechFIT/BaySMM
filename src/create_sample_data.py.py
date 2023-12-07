@@ -10,7 +10,7 @@ Create sample data from 20 Newsgroups
 """
 
 import os
-import codecs
+import json
 import argparse
 import numpy as np
 import scipy.io as sio
@@ -19,18 +19,18 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 
 def main():
-    """ main method """
+    """main method"""
 
     args = parse_arguments()
 
     os.makedirs(args.out_dir, exist_ok=True)
 
     # just 3 categories
-    cats = ['alt.atheism', 'sci.space', 'rec.autos']
-    train_ng = fetch_20newsgroups(subset='train', categories=cats)
-    test_ng = fetch_20newsgroups(subset='test', categories=cats)
+    cats = ["alt.atheism", "sci.space", "rec.autos"]
+    train_ng = fetch_20newsgroups(subset="train", categories=cats)
+    test_ng = fetch_20newsgroups(subset="test", categories=cats)
 
-    cvect = CountVectorizer(strip_accents='ascii', min_df=2)
+    cvect = CountVectorizer(strip_accents="ascii", min_df=2)
     train_dbyw = cvect.fit_transform(train_ng.data)
     test_dbyw = cvect.transform(test_ng.data)
 
@@ -43,8 +43,8 @@ def main():
     np.savetxt(args.out_dir + "train.labels", train_ng.target, fmt="%d")
     np.savetxt(args.out_dir + "test.labels", test_ng.target, fmt="%d")
 
-    with codecs.open(args.out_dir + "vocab", "w", "utf-8") as fpw:
-        fpw.write("\n".join(cvect.vocabulary_))
+    with open(args.out_dir + "vocab.json", "w", encoding="utf-8") as fpw:
+        json.dump(cvect.vocabulary_, fpw, indent=2, ensure_ascii=False)
 
     with open(args.out_dir + "mtx.flist", "w") as fpw:
         fpw.write(os.path.realpath(args.out_dir) + "/train.mtx\n")
@@ -54,7 +54,7 @@ def main():
 
 
 def parse_arguments():
-    """ Parse command line arguments """
+    """Parse command line arguments"""
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out_dir", help="path to output dir")
@@ -62,6 +62,6 @@ def parse_arguments():
 
     return args
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     main()
