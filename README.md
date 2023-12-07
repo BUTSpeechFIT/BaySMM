@@ -18,6 +18,8 @@
 
 ## Data preparation - sample from 20Newsgroups
 
+* We will sample a subset with documents from 3 categories: `alt.atheism`, `sci.space`, `rec.autos`.
+
 ```python src/create_sample_data.py.py sample_data/```
 
 ## Training the model
@@ -78,3 +80,41 @@ an automatically created sub-directory: `exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_ad
     ```python src/train_and_clf_cv.py exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/ivecs/train_model_T1000_e1000.h5 sample_data/train.labels glcu```
 
 * All the results and predicted classes are saved in `exp/*/results/`
+
+## Topic discovery
+
+* Using the trained model and extracted embeddings, you can discover the topics in the dataset.
+Each topic is be represented by a set of words.
+* The topic discovery relies on k-means clustering.
+
+* Below, we will cluster the embeddings into `k=20` clusters. Then consider only `topn=8` dense clusters
+and display `topk=10` most representative words per cluster.
+
+```python
+python src/discover_topics.py \
+        sample_data/vocab.json \
+        exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/config.json \
+        -ivecs_h5 exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/ivecs/test_model_T1000_e1000.h5
+        -k 20 \
+        -topn 8 \
+        -topk 10
+```
+
+* Sample output is below (note that the original topics for the same data are: `alt.atheism`, `sci.space`, `rec.autos`)
+
+```
+Cluster   8: geology, retrieve, sfsuvax1, arthurc, chandler, sfsu, contacts, francisco, starflight, arthur,
+
+Cluster  13: libemc, insurance, brigham, byuvm, geico, refund, dx, pointers, dealer, farm,
+
+Cluster   6: bil, conner, osrhe, okcforum, theist, atheist, deliberately, theistic, validate, trustworthy,
+
+Cluster   3: clutch, damaged, tires, miles, valve, prelude, tranny, milage, rod, chevy,
+
+Cluster  18: oxides, gasses, depended, 626, 908, player, alex, delco, delcoelect, harvey,
+
+Cluster   2: koresh, coutesy, follower, kaflowitz, campollo, wwc, 734928689, trilemma, gut, maddi,
+
+Cluster   1: 60s, westminster, barlas, jkjec, shazad, toys, headlights, mliggett, crx, pontiac,
+
+Cluster  10: servicing, grapple, usingthe, edo, costar, tug, hst, stow, unstow, gyros, ```
