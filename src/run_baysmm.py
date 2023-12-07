@@ -355,7 +355,7 @@ def main():
     args = parse_arguments()
 
     attempts = 0
-    gpu_id = -1
+    gpu_id = os.environ.get("CUDA_VISIBLE_DEVICES", None)
 
     while True:
 
@@ -363,7 +363,7 @@ def main():
 
             stime = time()
 
-            if args.cuda and gpu_id == -1:
+            if args.cuda and gpu_id == None:
                 gpu_ids = utils.get_free_gpus()
                 os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_ids[0])
                 print("Using GPU ID:", gpu_ids[0])
