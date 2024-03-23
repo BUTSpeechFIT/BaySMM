@@ -1,120 +1,72 @@
+# MBay: A Bayesian Multilingual Document Model for Zero-shot Topic Identification and Discovery
 
-# Bayesian Subspace Multinomial Model (BaySMM)
+- The original implementation of BaySMM is now moved to [legacy](legacy/)
+- The multilingual version also supports monolingual training.
 
-* Model for learning document embeddings (i-vectors) along with their uncertainties.
-* Gaussian linear classifier exploiting the uncertainties in document embeddings.
-* See paper <http://arxiv.org/abs/1908.07599>
+### About
 
-## Requirements
+* The paper is available on [arXiv](https://arxiv.org/abs/2007.01359v3)
 
-* Python >= 3.7
-* PyTorch >= 1.1
-* scipy >= 1.3
-* numpy >= 1.16.4
-* scikit-learn >= 0.21.2
-* h5py >= 2.9.0
+* See [INSTALL.md](INSTALL.md) for requirements and installation instructions.
 
-* See [INSTALL.md](INSTALL.md) for detailed instructions.
+* `steps/` - Contains recipes for downloading parallel data from OPUS to train MBay models and downstream classifiers
+* `maby/` - Source code for the model definition, training utils, etc.
+* `scripts/` - Source code for data preparation and classifiers
+* `lists/` - Contains list of languages and dataset names used for trianing - these files are need for recipes in the steps/
+* `etc/` - json files topic ID to int mapping
+* `pylibs/` - add to PYTHONPATH
+* `data_splits/` - Contains file IDs / doc IDs / rowIDs for creating 5 splits for MLDoc and INA
 
-## Data preparation - sample from 20Newsgroups
+* To create MLDoc5x
+  Use the give file IDs with the code from original MLDoc
+* To create INA5x
+  Dowload the original from IndicNLPsuite and run `src/generate_documents_indic_news_articles.py`
 
-* We will sample a subset with documents from 3 categories: `alt.atheism`, `sci.space`, `rec.autos`.
+* See `steps/`
+  0 through 6 for downloading data, preparing, extracting bow features, training mBay and cross-lingual classification
 
-```python src/create_sample_data.py.py sample_data/```
+### Recipe
 
-## Training the model
+```bash
+bash env.sh
+```
 
-* For help:
+* Download Europarl, MultiUN, NewsCommentary, GlobalVoices, for languages en, de, es, fr, it, ru.
 
-    ```python src/run_baysmm.py --help```
+```bash
+steps/0_download_data_and_extract.sh lists/dataset_7L.list lists/langs_6L.list data/
+```
 
-* To train on GPU set `CUDA_VISIBLE_DEVICES=$GPU_ID` where the `$GPU_ID` is the free GPU index
-
-* Following code trains the model for `1000` VB iterations and saves the model in
-an automatically created sub-directory: `exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/`
-
-    ```python
-    python src/run_baysmm.py train \
-        sample_data/train.mtx \
-        sample_data/vocab \
-        exp/ \
-        -K 50 \
-        -trn 1000 \
-        -lw 1e+01 \
-        -var_p 1e+01 \
-        -lt 1e-03
-    ```
-
-* ELBO and KLD for every iteration, log file, etc are saved in the sub-directory.
-
-## Extracting the posterior distributions of embeddings
-
-* Extract embeddings `[mean, log.std.dev]` for `1000` iterations for each of the stats file present in `sample_data/mtx.flist` file list.
-* Using `-nth 100` argument,  embeddings for every `100`th iteration are also saved.
-
-    ```python
-    python src/run_baysmm.py extract \
-        sample_data/mtx.flist \
-        exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/model_T1000.h5 \
-        -xtr 1000 \
-        -nth 100
-    ```
-
-* Extracted embedding posterior distributions are saved in `exp/*/ivecs/` sub-directory with appropriate names.
-
-## Training and testing the classifier
-
-* Three classifiers can be trained on these embeddings.
-* Use `--final` option to train and test classifier on embeddings from the final iteration.
-
-1. Gaussian linear classifier - uses only the mean parameter
-
-    ```python src/train_and_clf_cv.py exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/ivecs/train_model_T1000_e1000.h5 sample_data/train.labels glc```
-
-2. Multi-class logistic regression - uses only the mean parameter
-
-    ```python src/train_and_clf_cv.py exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/ivecs/train_model_T1000_e1000.h5 sample_data/train.labels lr```
-
-3. Gaussian linear classifier with uncertainty - uses full posterior distribution
-
-    ```python src/train_and_clf_cv.py exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/ivecs/train_model_T1000_e1000.h5 sample_data/train.labels glcu```
-
-* All the results and predicted classes are saved in `exp/*/results/`
-
-## Topic discovery
-
-* Using the trained model and extracted embeddings, you can discover the topics in the dataset.
-Each topic is be represented by a set of words.
-* The topic discovery relies on k-means clustering.
-
-* Below, we will cluster the embeddings into `k=20` clusters. Then consider only `topn=8` dense clusters
-and display `topk=10` most representative words per cluster.
+```bash
+steps/1_apply_msl_constraint_and_extract.sh lists/dataset_7L.list lists/langs_6L.list data/ 35
+``````
 
 ```python
-python src/discover_topics.py \
-        sample_data/vocab.json \
-        exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/config.json \
-        -ivecs_h5 exp/s_1.00_rp_1_lw_1e+01_l1_1e-03_50_adam/ivecs/test_model_T1000_e1000.h5
-        -k 20 \
-        -topn 8 \
-        -topk 10
+steps/2_create_flists_per_language.py data/ lists/dataset_7L.list -lang_list_file lists/langs_6L.list -msl 35 -out_flist_dir flists/eu-multiun-nc-gv/
 ```
 
-* Sample output is below (note that the original topics for the same data are: `alt.atheism`, `sci.space`, `rec.autos`)
+* Create bag-of-words statistics using data for each language, independently. Here, we are limiting the max vocab size to `10000`, but it can be even higher.
 
+```python
+python steps/3_build_vocabulary_and_extract_bow_stats.py flists/eu-multiun-nc-gv/ exp/bow/eu-multiun-nc-gv/ -lang_list_file lists/langs_6L.list -xtr_flist_dir flists/eu-multiun-nc-gv/ -xtr_tag eu-multiun-nc-gv -mv 10000
 ```
-Cluster   8: geology, retrieve, sfsuvax1, arthurc, chandler, sfsu, contacts, francisco, starflight, arthur,
 
-Cluster  13: libemc, insurance, brigham, byuvm, geico, refund, dx, pointers, dealer, farm,
+```bash
+steps/4_create_train_json.sh lists/dataset_7L.list lists/langs_6L.list exp/bow/eu-multiun-nc-gv/
+```
 
-Cluster   6: bil, conner, osrhe, okcforum, theist, atheist, deliberately, theistic, validate, trustworthy,
+```bash
+steps/5_train_model_and_xtr_embeddings.sh exp/bow/eu-multiun-nc-gv/ 6L
+```
 
-Cluster   3: clutch, damaged, tires, miles, valve, prelude, tranny, milage, rod, chevy,
-
-Cluster  18: oxides, gasses, depended, 626, 908, player, alex, delco, delcoelect, harvey,
-
-Cluster   2: koresh, coutesy, follower, kaflowitz, campollo, wwc, 734928689, trilemma, gut, maddi,
-
-Cluster   1: 60s, westminster, barlas, jkjec, shazad, toys, headlights, mliggett, crx, pontiac,
-
-Cluster  10: servicing, grapple, usingthe, edo, costar, tug, hst, stow, unstow, gyros, ```
+### Citation
+```
+@misc{kesiraju2020bayesian,
+      title={A Bayesian Multilingual Document Model for Zero-shot Topic Identification and Discovery},
+      author={Santosh Kesiraju and Sangeet Sagar and Ondřej Glembek and Lukáš Burget and Ján Černocký and Suryakanth V Gangashetty},
+      year={2020},
+      eprint={2007.01359v3},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```

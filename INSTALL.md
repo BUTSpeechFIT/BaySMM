@@ -1,13 +1,47 @@
-# Installation instructions
+### Required packages
+```
+torch numpy scipy scikit-learn numexpr h5py tqdm  matplotlib sentencepiece jieba konoha
+```
 
-* Recommended to use Anaconda python distribution.
+### Detailed steps for installation
 
-* Download from [here](https://www.anaconda.com/distribution/) and install it.
+* Create a `python3` virtual environment
 
-* Install python libraries:
+```bash
+mkdir -p envs
+python3 -m venv envs/mbay-env
+```
 
-    ```conda install -y numpy=1.16.4 scipy=1.3 scikit-learn=0.21.2 h5py=2.9.0```
+* Activate the environment
 
-* Install PyTorch:
+```bash
+. envs/mbay-env/bin/activate
+```
 
-    ```conda install -y pytorch torchvision cudatoolkit=10.0 -c pytorch```
+* Install required packages
+
+```bash
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+```bash
+pip3 install scikit-learn scipy numexpr tqdm h5py matplotlib
+```
+
+```bash
+pip3 install sentencepiece jieba konoha
+```
+
+* Create `path.sh` to activate the environment and set PYTHONPATH
+
+```bash
+echo ". ${PWD}/envs/mbay-env/bin/activate" > path.sh
+echo "export PYTHONPATH=${PWD}/mbay/:${PYTHONPATH}" >> path.sh
+echo "export PYTHONPATH=${PWD}/pylibs/:${PYTHONPATH}" >> path.sh
+chmod u+x path.sh
+```
+
+* Run `. path.sh` and you are ready.
+
+
+
