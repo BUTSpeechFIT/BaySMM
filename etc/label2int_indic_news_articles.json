@@ -1,0 +1,9 @@
+{
+  "entertainment": 0,
+  "sports": 1,
+  "business": 2,
+  "lifestyle": 3,
+  "technology": 4,
+  "crime": 5,
+  "politics": 6
+}
